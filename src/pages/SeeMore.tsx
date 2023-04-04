@@ -1,9 +1,13 @@
 import styled from '@emotion/styled/macro';
+import { AxiosError, AxiosResponse } from 'axios';
+import { useQuery } from 'react-query';
 
+import { fetchMyProfile } from '../apis/userApi';
 import BottomNavigation from '../components/BottomNavigation';
 import IconButtonList from '../components/SeeMore/IconButtonList';
 import UserInfo from '../components/SeeMore/UserInfo';
 import TopNavigation from '../components/TopNavigation';
+import { IProfile } from '../types';
 
 const Base = styled.div`
   width: 100%;
@@ -18,11 +22,21 @@ const Container = styled.div`
 `;
 
 export default function SeeMore() {
+  const { data: profileData } = useQuery<AxiosResponse<IProfile>, AxiosError>(
+    'fetchMyProfile',
+    fetchMyProfile,
+  );
+
   return (
     <Base>
       <Container>
         <TopNavigation title="더보기" />
-        <UserInfo username="홍길동" telNo="010-9999-9999" />
+        {profileData && (
+          <UserInfo
+            username={profileData?.data.username}
+            telNo="+8210 9999 9999"
+          />
+        )}
         <IconButtonList />
         <BottomNavigation />
       </Container>
