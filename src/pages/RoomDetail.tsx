@@ -1,8 +1,10 @@
+import { useEffect, useRef, useState } from 'react';
 import { css, Global } from '@emotion/react';
 import styled from '@emotion/styled/macro';
 import { AxiosError, AxiosResponse } from 'axios';
 import { useMutation, useQuery } from 'react-query';
 import { useParams } from 'react-router-dom';
+import { io } from 'socket.io-client';
 
 import { fetchChatMessageList, sendChatMessage } from '../apis/chatApi';
 import { fetchChatRoomDetail } from '../apis/roomApi';
@@ -33,6 +35,8 @@ const globalStyle = css`
 `;
 
 export default function RoomDetail() {
+  const scrollBottomRef = useRef<HTMLLIElement>(null);
+
   const { roomId } = useParams<string>();
 
   const { data: profileData } = useQuery<AxiosResponse<IProfile>, AxiosError>(
@@ -50,6 +54,18 @@ export default function RoomDetail() {
     () => fetchChatMessageList(roomId as string),
   );
 
+  const [messages, setMessages] = useState<IChat[]>(chatListData?.data || []);
+
+  useEffect(() => {
+    const socket = io('http://localhost:8000', { path: '/socket.io' });
+
+    socket.emit('join', roomId);
+
+    socket.on('chat', (newMessage: IChat) => {
+      setMessages(prev => [...prev, newMessage]);
+    });
+  }, []);
+
   const mutation = useMutation('sendChatMessage', (content: string) =>
     sendChatMessage(roomId as string, content),
   );
@@ -60,6 +76,10 @@ export default function RoomDetail() {
     }
   };
 
+  useEffect(() => {
+    scrollBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
   return (
     <Base>
       <Global styles={globalStyle} />
@@ -68,7 +88,7 @@ export default function RoomDetail() {
       )}
       <Container>
         <MessageList>
-          {chatListData?.data.map(message =>
+          {messages.map(message =>
             message.senderId === profileData?.data.userId ? (
               <SentMessage
                 senderId={message.senderId}
@@ -84,6 +104,7 @@ export default function RoomDetail() {
               />
             ),
           )}
+          <li ref={scrollBottomRef} />
         </MessageList>
       </Container>
       <InputChat onClick={handleSend} />
