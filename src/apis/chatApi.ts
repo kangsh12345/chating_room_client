@@ -1,6 +1,6 @@
 import axiosInstance from '.';
 
-export function chatApi(roomId: string) {
+export function fetchChatMessageList(roomId: string) {
   return axiosInstance.get(`/chat/${roomId}`);
 }
 
